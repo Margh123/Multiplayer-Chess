@@ -35,36 +35,57 @@
             max-width: 500px;
             min-height: 50px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+			gap: 15px;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             position: relative;
         }
-        
-        .counter {
-            position: absolute;
-            top: 25%;
-            right: 10px;
-            font-size: 1.1rem;
-            font-weight: normal;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 2px 8px;
-			display: block !important;
-        }
 		
-		.castling-indicator {
-			position: absolute;
-			left: 10px;
-			top: 50%;
-			transform: translateY(-50%);
+		.status-indicators {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+		}
+        
+		.castling-indicator,
+		.enpassant-indicator,
+		.counter {
+			position: static;
+			transform: none;
 			font-size: 0.9rem;
 			letter-spacing: 1px;
 			opacity: 0.8;
 			background: rgba(255,255,255,0.1);
 			padding: 2px 6px;
 			border-radius: 4px;
+		}
+
+		#statusMessage {
+			position: absolute;
+			left: 55%;
+			transform: translateX(-50%);
+		}
+
+		.counter {
+			margin-left: auto;
+		}
+
+		@media (max-width: 500px) {
+			.status {
+				gap: 8px;
+				font-size: 1rem;
+			}
+			.status-indicators {
+				gap: 5px;
+			}
+			.castling-indicator,
+			.enpassant-indicator,
+			.counter {
+				font-size: 0.8rem;
+				padding: 2px 4px;
+			}
 		}
         
         .board-container {
@@ -295,11 +316,14 @@
     </style>
 </head>
 <body>
-    <div class="status" id="status">
-		<div class="castling-indicator" id="castling"></div>
-        <div id="statusMessage">White's turn to play</div>
-        <div class="counter" id="counter">0</div>
-    </div>
+	<div class="status" id="status">
+		<div class="status-indicators">
+			<div class="castling-indicator" id="castling"></div>
+			<div class="enpassant-indicator" id="enpassant">--</div>
+			<div class="counter" id="counter">0</div>
+		</div>
+		<div id="statusMessage">White's turn to play</div>
+	</div>
     
     <div class="board-container">
         <div class="chess-board" id="board"></div>
@@ -339,6 +363,7 @@
             createBoard();
             setupPieces();
 			updateCastlingDisplay();
+			updateEnPassantDisplay();
 
 			gameState.positionHistory = [];
 			gameState.positionHistory.push(getPositionKey());
@@ -916,6 +941,21 @@
 			
 			castlingDiv.textContent = rights || '-';
 		}
+		
+		function updateEnPassantDisplay() {
+			const enpassantDiv = document.getElementById('enpassant');
+			 // Show original en passant if promotion is pending
+			const epTarget = gameState.promotionPending ? 
+				gameState.promotionPending.originalEnPassant : 
+				gameState.enPassantTarget;
+			if (epTarget) {
+				const file = files[epTarget.col];
+				const rank = 8 - epTarget.row;
+				enpassantDiv.textContent = `${file}${rank}`;
+			} else {
+				enpassantDiv.textContent = '--';
+			}
+		}
 	
 		function updateCounter() {
 			const counterValue = Math.min(50, Math.floor(gameState.fiftyMoveCounter));
@@ -1007,6 +1047,7 @@
             const { from, to } = move;
             const piece = gameState.board[from.row][from.col];
 			const originalPiece = gameState.board[to.row][to.col]; // Capture original piece here
+			const originalEnPassant = gameState.enPassantTarget;
             gameState.enPassantTarget = null;
             // Find the matching valid move to get its properties
             const validMove = gameState.validMoves.find(
@@ -1132,7 +1173,8 @@
                     col: to.col, 
                     color: piece.color, 
                     from: { row: from.row, col: from.col },
-					isPawnMove: true
+					isPawnMove: true,
+					originalEnPassant: originalEnPassant
                 };
             } else {
                 // Update check status
@@ -1166,6 +1208,7 @@
             gameState.selectedPiece = null;
             gameState.validMoves = [];
 			updateCastlingDisplay();
+			updateEnPassantDisplay();
             renderBoard();
             updateStatus();
 			updateCounter();
@@ -1256,13 +1299,14 @@
             if (!menu.contains(e.target)) {
                 // Undo pawn move: move pawn back to previous square
                 if (gameState.promotionPending) {
-                    const { row, col, color, from } = gameState.promotionPending;
+                    const { row, col, color, from, originalEnPassant } = gameState.promotionPending;
                     // Restore pawn to previous square
                     gameState.board[from.row][from.col] = { type: 'pawn', color };
                     // Restore captured piece if there was one
                     gameState.board[row][col] = gameState.lastPromotionCapture || null;
                     gameState.lastPromotionCapture = null;
-                    
+                    // Restore en passant target from before the promotion move
+					gameState.enPassantTarget = originalEnPassant;
                     // Switch back to original player
                     gameState.currentPlayer = color;
                 }
@@ -1270,6 +1314,7 @@
                 menu.remove();
                 gameState.promotionPending = null;
                 document.removeEventListener('mousedown', handlePromotionOutsideClick);
+				updateEnPassantDisplay();
                 renderBoard();
                 updateStatus();
             }
@@ -1312,6 +1357,7 @@
 			gameState.positionHistory.push(getPositionKey());
 			updatePositionHistory();
             updateCastlingDisplay();
+			updateEnPassantDisplay();
             renderBoard();
             updateStatus();
 			updateCounter();
