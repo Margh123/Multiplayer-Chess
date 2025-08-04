@@ -1082,6 +1082,26 @@
 				if (from.col === 0) gameState.castlingRights[piece.color].queenside = false;
 				if (from.col === 7) gameState.castlingRights[piece.color].kingside = false;
 			}
+			
+			if (originalPiece) {
+				// Check if captured piece was a rook in its starting position
+				if (originalPiece.type === 'rook') {
+					const color = originalPiece.color;
+					const isKingsideRook = (to.col === 7 && 
+						((color === 'white' && to.row === 7) || 
+						 (color === 'black' && to.row === 0)));
+					const isQueensideRook = (to.col === 0 && 
+						((color === 'white' && to.row === 7) || 
+						 (color === 'black' && to.row === 0)));
+
+					if (isKingsideRook) {
+						gameState.castlingRights[color].kingside = false;
+					}
+					if (isQueensideRook) {
+						gameState.castlingRights[color].queenside = false;
+					}
+				}
+			}
             
             // Store captured piece for promotion undo
             gameState.lastPromotionCapture = gameState.board[to.row][to.col];
