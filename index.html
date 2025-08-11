@@ -1046,7 +1046,7 @@
         function makeMove(move) {
             const { from, to } = move;
             const piece = gameState.board[from.row][from.col];
-			const originalPiece = gameState.board[to.row][to.col]; // Capture original piece here
+			const originalPiece = gameState.board[to.row][to.col]; 
 			const originalEnPassant = gameState.enPassantTarget;
             gameState.enPassantTarget = null;
             // Find the matching valid move to get its properties
@@ -1063,8 +1063,6 @@
 				gameState.board[capturedRow][capturedCol] = null;
 				enPassantCaptureOccurred = true;
 			}
-            
-            // Handle en passant capture
     
 			if (validMove && validMove.isCastle) {
 				// Move the rook
