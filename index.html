@@ -748,8 +748,8 @@
                         }
                     });
 				// Add castling moves
-				if (piece.color === 'white' && row === 7 && col === 4 || 
-					piece.color === 'black' && row === 0 && col === 4) {
+				if (!gameState.check[piece.color] && (piece.color === 'white' && row === 7 && col === 4 || 
+					piece.color === 'black' && row === 0 && col === 4)) {
 					
 					// Kingside castling
 					if (gameState.castlingRights[piece.color].kingside &&
